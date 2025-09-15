@@ -1,0 +1,11 @@
+{
+    "C_Cpp.errorSquiggles": "disabled",
+    "files.associations": {
+        "lock.h": "c",
+        "common.h": "c",
+        "cpu.h": "c",
+        "uart.h": "c",
+        "print.h": "c",
+        "riscv.h": "c"
+    }
+}
