@@ -19,7 +19,7 @@ void pop_off(void)
 // 中断应当是关闭的
 bool spinlock_holding(spinlock_t *lk)
 {
-
+    return false;
 }
 
 // 自选锁初始化
