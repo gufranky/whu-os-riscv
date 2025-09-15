@@ -10,5 +10,4 @@ typedef struct cpu {
 
 int     mycpuid(void);
 cpu_t*  mycpu(void);
-
 #endif

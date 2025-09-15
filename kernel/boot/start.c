@@ -4,6 +4,9 @@ __attribute__ ((aligned (16))) uint8 CPU_stack[4096 * NCPU];
 
 void start()
 {
+  // 设置每个核心的 tp 寄存器为其 hartid
+  w_tp(r_mhartid());
+  
   unsigned long x = r_mstatus();
   x &= ~MSTATUS_MPP_MASK;
   x |= MSTATUS_MPP_S;

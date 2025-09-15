@@ -11,10 +11,9 @@ typedef struct spinlock {
 
 void push_off();
 void pop_off();
-
+int     holding(struct spinlock *lk);
 void spinlock_init(spinlock_t* lk, char* name);
 void spinlock_acquire(spinlock_t* lk);
 void spinlock_release(spinlock_t* lk);
 bool spinlock_holding(spinlock_t* lk); 
-
 #endif

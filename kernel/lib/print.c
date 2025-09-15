@@ -7,7 +7,7 @@
 #define BACKSPACE 0x100
 volatile int panicked = 0;
 
-//static spinlock_t print_lk;
+static spinlock_t print_lk;
 
 static char digits[] = "0123456789abcdef";
 
@@ -24,7 +24,7 @@ consputc(int c)
 
 void print_init(void)
 {
-    //TODO：初始化锁
+    spinlock_init(&print_lk,"printf");//TODO：初始化锁
 }
 static void
 printint(long long xx, int base, int sign)
@@ -57,8 +57,7 @@ va_list ap;
   char *s;
 
   if(panicked == 0)
-  {};
-    //acquire(&pr.lock);
+  spinlock_acquire(&print_lk);
 
   va_start(ap, fmt);
   for(i = 0; (cx = fmt[i] & 0xff) != 0; i++){
@@ -118,8 +117,7 @@ va_list ap;
   va_end(ap);
 
   if(panicked == 0)
-  {};
-    //release(&pr.lock);
+  spinlock_release(&print_lk);
 }
 
 void panic(const char *s)
