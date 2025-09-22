@@ -27,6 +27,15 @@ void print_init(void)
     spinlock_init(&print_lk,"printf");//TODO：初始化锁
 }
 static void
+printptr(uint64 x)
+{
+  int i;
+  consputc('0');
+  consputc('x');
+  for (i = 0; i < (sizeof(uint64) * 2); i++, x <<= 4)
+    consputc(digits[x >> (sizeof(uint64) * 8 - 4)]);
+}
+static void
 printint(long long xx, int base, int sign)
 {
   char buf[20];
@@ -95,7 +104,7 @@ va_list ap;
       printint(va_arg(ap, uint64), 16, 0);
       i += 2;
     } else if(c0 == 'p'){
-      //printptr(va_arg(ap, uint64));
+      printptr(va_arg(ap, uint64));
     } else if(c0 == 'c'){
       consputc(va_arg(ap, uint));
     } else if(c0 == 's'){

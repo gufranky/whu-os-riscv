@@ -7,6 +7,9 @@
         "uart.h": "c",
         "print.h": "c",
         "riscv.h": "c",
-        "proc.h": "c"
+        "proc.h": "c",
+        "vmem.h": "c",
+        "memlayout.h": "c",
+        "pmem.h": "c"
     }
 }

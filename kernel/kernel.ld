@@ -38,5 +38,18 @@ SECTIONS
     *(.bss .bss.*)
   }
 
+
+  /* 内核数据段结束，KERNEL_DATA 指向此处 */
+  PROVIDE(KERNEL_DATA = .);
+
+  /* 可分配物理页起始，ALIGN到4KB页 */
+  . = ALIGN(0x1000);
+  PROVIDE(ALLOC_BEGIN = .);
+
+  /* 假设物理内存128MB，可分配区域到0x88000000 */
+  . = 0x88000000;
+  PROVIDE(ALLOC_END = .);
+
+  /* 内核结束符号 */
   PROVIDE(end = .);
 }

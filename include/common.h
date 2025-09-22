@@ -1,7 +1,6 @@
 // 这个头文件通常认为其他.h文件都应该include
 #ifndef __COMMON_H__
 #define __COMMON_H__
-
 // 类型定义
 
 typedef char                   int8;
@@ -21,5 +20,5 @@ typedef enum {false = 0, true = 1} bool;
 #endif
 
 #define NCPU 2
-
+#define PGSIZE 4096
 #endif
