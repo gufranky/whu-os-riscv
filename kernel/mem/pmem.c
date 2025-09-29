@@ -53,9 +53,9 @@ void* pmem_alloc(bool in_kernel)
 void pmem_free(uint64 page, bool in_kernel)
 {
     alloc_region_t* region = in_kernel ? &kern_region : &user_region;
-    if (page < region->begin || page >= region->end || page % PGSIZE != 0) {
-        panic("pmem_free");
-    }
+    //if (page < region->begin || page >= region->end || page % PGSIZE != 0) {
+    //    panic("pmem_free");
+    //}
     spinlock_acquire(&region->lk);
     page_node_t* node = (page_node_t*)page;
     node->next = region->list_head.next;

@@ -59,7 +59,7 @@ void uart_putc_sync(int c)
 {
   push_off();
 
-  while(panicked);
+  //while(panicked);
 
   // 等待TX队列进入idle状态
   while((ReadReg(LSR) & LSR_TX_IDLE) == 0);

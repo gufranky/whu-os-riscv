@@ -37,8 +37,8 @@ void vm_mappages(pgtbl_t pgtbl, uint64 va, uint64 pa, uint64 len, int perm)
         pte_t* pte = vm_getpte(pgtbl, start, true);
         if (!pte)
             panic("vm_mappages: getpte fail");
-        if (*pte & PTE_V)
-            panic("vm_mappages: remap"); // 不允许重复映射
+        //if (*pte & PTE_V)
+        //    panic("vm_mappages: remap"); // 不允许重复映射
         *pte = PA_TO_PTE(pa) | perm | PTE_V;
     }
 }
@@ -59,10 +59,7 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
 }
 
 #include "memlayout.h"
-
-// 内核页表全局变量
 pgtbl_t kernel_pgtbl = NULL;
-
 // 权限宏
 #define KERN_PERM (PTE_R | PTE_W | PTE_X)
 #define MEM_START   0x80000000UL
@@ -86,4 +83,24 @@ void kvm_inithart() {
     uint64 satp = MAKE_SATP(kernel_pgtbl);
     asm volatile("csrw satp, %0" :: "r"(satp));
     asm volatile("sfence.vma");
+}
+void vm_print(pgtbl_t pgtbl)
+{
+    int length = 0;
+    pgtbl_t toprint[100];
+    printf("page table %p\n", pgtbl);
+    for (int i = 0; i < 512; i++) {
+        pte_t pte = pgtbl[i];
+        if (pte & PTE_V) {
+            uint64 pa = PTE_TO_PA(pte);
+            int flags = PTE_FLAGS(pte);
+            printf("  pte[%d]: pa %p flags %x\n", i, pa, flags);
+            if (PTE_CHECK(pte)) {
+                toprint[length]=(pgtbl_t)pa;
+                length++;
+            }
+        }
+    }
+    for(int i = 0; i < length; i++)
+        vm_print(toprint[i]);
 }

@@ -57,7 +57,7 @@ typedef uint64* pgtbl_t;
 #define PTE_G (1 << 5) // global
 #define PTE_A (1 << 6) // accessed
 #define PTE_D (1 << 7) // dirty
-
+extern pgtbl_t kernel_pgtbl;
 // 检查一个PTE是否属于pgtbl
 #define PTE_CHECK(pte) (((pte) & (PTE_R | PTE_W | PTE_X)) == 0)
 

@@ -66,7 +66,7 @@ va_list ap;
   char *s;
 
   if(panicked == 0)
-  spinlock_acquire(&print_lk);
+  {spinlock_acquire(&print_lk);}
 
   va_start(ap, fmt);
   for(i = 0; (cx = fmt[i] & 0xff) != 0; i++){
