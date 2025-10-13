@@ -131,6 +131,7 @@ va_list ap;
 
 void panic(const char *s)
 {
+  uart_putc_sync('f');
   panicked = 1;
   printf("panic: ");
   printf("%s\n", s);
