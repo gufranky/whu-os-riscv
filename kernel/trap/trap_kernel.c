@@ -77,11 +77,17 @@ void external_interrupt_handler()
     // 获取中断号
     int irq = plic_claim();
 
-    if (irq == UART_IRQ) {
-        // 处理UART中断
-        printf("UART interrupt received\n");
-    } else if (irq) {
-        printf("Unknown external interrupt: %d\n", irq);
+    switch (irq) {
+        case UART_IRQ:
+            // 处理UART中断 - 键盘输入显示
+            uart_intr();
+            break;
+        case 0:
+            // 没有中断
+            break;
+        default:
+            printf("Unknown external interrupt: %d\n", irq);
+            break;
     }
 
     // 确认中断处理完成
@@ -93,9 +99,14 @@ void external_interrupt_handler()
 // 时钟中断处理 (基于CLINT)
 void timer_interrupt_handler()
 {
-    // 更新系统时钟的ticks计数器
-    timer_update();
-    printf("t");
+    // 只有CPU 0更新系统时钟，避免双核重复更新
+    if (mycpuid() == 0) {
+        timer_update();
+    }
+
+    // 每个核心都输出自己的时钟中断标识
+    int cpuid = mycpuid();
+    printf("t%d\n", cpuid);
 }
 
 // 在kernel_vector()里面调用
@@ -115,7 +126,6 @@ void trap_kernel_handler()
     if (scause & 0x8000000000000000ULL) {
         // 这是一个中断
         int interrupt_id = scause & 0xf;
-        printf("Interrupt received: %d\n", interrupt_id);
         switch (interrupt_id) {
             case 1: // S-mode软件中断（由M-mode时钟中断触发）
                 timer_interrupt_handler();

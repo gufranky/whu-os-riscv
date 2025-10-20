@@ -12,6 +12,7 @@ int main()
 
     if(cpuid == 0) {
         // CPU 0 初始化
+        uart_init();
         print_init();
 
         // 初始化时钟系统
