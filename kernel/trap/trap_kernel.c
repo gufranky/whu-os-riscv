@@ -3,7 +3,7 @@
 #include "dev/uart.h"
 #include "dev/plic.h"
 #include "trap/trap.h"
-#include "proc/proc.h"
+#include "proc/cpu.h"
 #include "memlayout.h"
 #include "riscv.h"
 
@@ -67,8 +67,8 @@ void trap_kernel_inithart()
     // 初始化PLIC
     plic_inithart();
 
-    // 启用S-mode软件中断和外设中断
-    w_sie(r_sie() | SIE_SSIE | SIE_SEIE);
+    // 启用S-mode软件中断、外设中断和定时器中断
+    w_sie(r_sie() | SIE_SSIE | SIE_SEIE | SIE_STIE);
 }
 
 // 外设中断处理 (基于PLIC)

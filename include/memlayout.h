@@ -2,6 +2,8 @@
 #ifndef __MEMLAYOUT_H__
 #define __MEMLAYOUT_H__
 
+#include "common.h"
+
 // UART 相关
 #define UART_BASE  0x10000000ul
 #define UART_IRQ   10
@@ -24,5 +26,8 @@
 #define CLINT_MSIP(hartid) (CLINT_BASE + 4 * (hartid))
 #define CLINT_MTIMECMP(hartid) (CLINT_BASE + 0x4000 + 8 * (hartid))
 #define CLINT_MTIME (CLINT_BASE + 0xBFF8)
+
+// 内核栈相关 - 为每个CPU分配内核栈空间
+#define KSTACK(hartid) (0x3f80000000L + ((hartid) + 1) * 2 * PGSIZE)
 
 #endif

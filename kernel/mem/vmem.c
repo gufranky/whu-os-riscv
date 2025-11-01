@@ -70,11 +70,22 @@ void kvm_init() {
     kernel_pgtbl = (pgtbl_t)pmem_alloc(true);
     memset(kernel_pgtbl, 0, PGSIZE);
     // 1. 硬件寄存器区（QEMU保留区）恒等映射
-    vm_mappages(kernel_pgtbl, UART_BASE, UART_BASE+1000, 1000, KERN_PERM);
-    vm_mappages(kernel_pgtbl, PLIC_BASE, PLIC_BASE+0x200000, 0x200000, KERN_PERM);
-    vm_mappages(kernel_pgtbl, CLINT_BASE, CLINT_BASE+0x10000, 0x10000, KERN_PERM);
+    vm_mappages(kernel_pgtbl, UART_BASE, UART_BASE, 1000, KERN_PERM);
+    vm_mappages(kernel_pgtbl, PLIC_BASE, PLIC_BASE, 0x400000, KERN_PERM);
+    vm_mappages(kernel_pgtbl, CLINT_BASE, CLINT_BASE, 0x10000, KERN_PERM);
     // 2. 可用内存区 0x80000000~0x88000000 恒等映射
     vm_mappages(kernel_pgtbl, MEM_START, MEM_START, MEM_END - MEM_START, KERN_PERM);
+
+    // 3. trampoline 映射到最高虚拟地址页
+    extern char trampoline[];  // trampoline.S 中定义
+    vm_mappages(kernel_pgtbl, VA_MAX - PGSIZE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
+
+    // 4. 为每个CPU分配和映射内核栈
+    for (int i = 0; i < NCPU; i++) {
+        uint64 pa = (uint64)pmem_alloc(true);  // 分配物理页作为内核栈
+        if (!pa) panic("kvm_init: failed to allocate kstack");
+        vm_mappages(kernel_pgtbl, KSTACK(i), pa, PGSIZE, PTE_R | PTE_W);
+    }
 }
 
 // 启用内核页表

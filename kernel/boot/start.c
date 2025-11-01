@@ -4,8 +4,21 @@
 void main();
 __attribute__ ((aligned (16))) uint8 CPU_stack[4096 * NCPU];
 
+// 外部符号，由链接脚本定义
+extern char sbss[];
+extern char ebss[];
+
 void start()
 {
+  // 只有CPU 0负责初始化BSS段
+  if (r_mhartid() == 0) {
+    // 将BSS段清零
+    char* p;
+    for (p = sbss; p < ebss; p++) {
+      *p = 0;
+    }
+  }
+
   // 设置每个核心的 tp 寄存器为其 hartid
   w_tp(r_mhartid());
 

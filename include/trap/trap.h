@@ -6,7 +6,7 @@
     中断是同步的, 异常是异步的
     中断返回时执行下一条指令, 异常返回时重新执行发生异常的指令
     常见中断: 时钟中断 外设中断 软件中断
-    常见异常: 非法指令 页面访问异常 断点异常
+    常见异常: 非法指令 页面访问异常 断点异常 系统调用
 */
 
 #include "common.h"
@@ -16,6 +16,9 @@
 void trap_kernel_init();
 void trap_kernel_inithart();
 void trap_kernel_handler();
+
+void trap_user_handler();
+void trap_user_return();
 
 // 辅助函数: 外设中断和时钟中断处理
 
