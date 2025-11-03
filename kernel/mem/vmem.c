@@ -1,6 +1,8 @@
 #include "mem/vmem.h"
 #include "mem/pmem.h"
 #include "common.h"
+#include "memlayout.h"
+#define VA_MAX (1ul << 38)   
 pte_t* vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc)
 {
     // 检查虚拟地址是否合法
@@ -58,7 +60,7 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
     }
 }
 
-#include "memlayout.h"
+
 pgtbl_t kernel_pgtbl = NULL;
 // 权限宏
 #define KERN_PERM (PTE_R | PTE_W | PTE_X)

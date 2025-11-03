@@ -2,7 +2,7 @@
 #define __VMEM_H__
 
 #include "common.h"
-#include "lib/print.h"
+
 /*
     我们使用RISC-V体系结构中的SV39作为虚拟内存的设计规范
 
@@ -30,11 +30,11 @@
 
 */
 
-// 页表项
 typedef uint64 pte_t;
 
-// 顶级页表
 typedef uint64* pgtbl_t;
+
+typedef struct mmap_region mmap_region_t;
 
 // satp寄存器相关
 #define SATP_SV39 (8L << 60)  // MODE = SV39
@@ -57,15 +57,14 @@ typedef uint64* pgtbl_t;
 #define PTE_G (1 << 5) // global
 #define PTE_A (1 << 6) // accessed
 #define PTE_D (1 << 7) // dirty
-extern pgtbl_t kernel_pgtbl;
+
 // 检查一个PTE是否属于pgtbl
 #define PTE_CHECK(pte) (((pte) & (PTE_R | PTE_W | PTE_X)) == 0)
 
 // 获取低10bit的flag信息
 #define PTE_FLAGS(pte) ((pte) & 0x3FF)
 
-// 定义一个相当大的VA, 规定所有VA不得大于它
-#define VA_MAX (1ul << 38)
+/*---------------------- in kvm.c -------------------------*/
 
 void   vm_print(pgtbl_t pgtbl);
 pte_t* vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc);
@@ -74,5 +73,22 @@ void   vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit);
 
 void   kvm_init();
 void   kvm_inithart();
+
+/*------------------------ in uvm.c -----------------------*/
+
+void   uvm_show_mmaplist(mmap_region_t* mmap);
+
+void   uvm_destroy_pgtbl(pgtbl_t pgtbl, uint32 level);
+void   uvm_copy_pgtbl(pgtbl_t old, pgtbl_t new, uint64 heap_top, uint32 ustack_pages, mmap_region_t* mmap);
+
+void   uvm_mmap(uint64 begin, uint32 npages, int perm);
+void   uvm_munmap(uint64 begin, uint32 npages);
+
+uint64 uvm_heap_grow(pgtbl_t pgtbl, uint64 heap_top, uint32 len);
+uint64 uvm_heap_ungrow(pgtbl_t pgtbl, uint64 heap_top, uint32 len);
+
+void   uvm_copyin(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 len);
+void   uvm_copyout(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 len);
+void   uvm_copyin_str(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 maxlen);
 
 #endif

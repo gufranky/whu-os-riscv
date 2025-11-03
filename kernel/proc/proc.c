@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "proc/proc.h"
 #include "riscv.h"
+#define VA_MAX (1ul << 38)   
 // 用户虚拟地址空间的布局常量
 #define TRAMPOLINE (VA_MAX - PGSIZE)     // trampoline页的虚拟地址
 #define TRAPFRAME (TRAMPOLINE - PGSIZE)  // trapframe页的虚拟地址
