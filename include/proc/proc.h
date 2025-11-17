@@ -92,16 +92,20 @@ enum proc_state {
 
 // 进程定义
 typedef struct proc {
-    
+
     spinlock_t lk;           // 自旋锁
 
-    /* 下面的六个字段需要持有锁才能修改 */
+    /* 下面的字段需要持有锁才能修改 */
 
     int pid;                 // 标识符
     enum proc_state state;   // 进程状态
     struct proc* parent;     // 父进程
     int exit_state;          // 进程退出时的状态(父进程可能关心)
     void* sleep_space;       // 睡眠是为在等待什么
+
+    // 时间片轮转调度字段
+    uint64 time_slice;       // 当前时间片剩余ticks
+    uint64 total_time;       // 进程总运行时间
 
     pgtbl_t pgtbl;           // 用户态页表
     uint64 heap_top;         // 用户堆顶(以字节为单位)
@@ -126,4 +130,7 @@ void     proc_sleep(void* sleep_space);// 进程睡眠
 void     proc_wakeup(void* sleep_space);               // 进程唤醒
 void     proc_sched();                                 // 进程切换到调度器
 void     proc_scheduler();                             // 调度器
+
+// 时间片轮转相关函数
+void     proc_reset_time_slice(proc_t* p);             // 重置进程时间片
 #endif

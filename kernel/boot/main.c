@@ -70,6 +70,5 @@ int main()
         }
     }
     proc_scheduler();
-    // 这里永远不应该到达
     return 0;
 }

@@ -4,6 +4,7 @@
 #include "dev/plic.h"
 #include "trap/trap.h"
 #include "proc/cpu.h"
+#include "proc/proc.h"
 #include "memlayout.h"
 #include "riscv.h"
 
@@ -107,6 +108,21 @@ void timer_interrupt_handler()
     // 每个核心都输出自己的时钟中断标识
     int cpuid = mycpuid();
     printf("t%d\n", cpuid);
+
+    // 时间片计算：仅更新当前进程的时间片计数
+    proc_t* p = myproc();
+    if (p != NULL) {
+        spinlock_acquire(&p->lk);
+        p->total_time++;
+        if (p->time_slice > 0) {
+            p->time_slice--;
+            // 显示时间片倒计时（仅在快用完时显示，避免输出过多）
+            if (p->time_slice <= 3) {
+                printf("[TIME] Process %d: %d ticks remaining\n", p->pid, p->time_slice);
+            }
+        }
+        spinlock_release(&p->lk);
+    }
 }
 
 // 在kernel_vector()里面调用
@@ -120,7 +136,7 @@ void trap_kernel_handler()
 
     // 确认trap来自S-mode且此时trap处于关闭状态
     assert(sstatus & SSTATUS_SPP, "trap_kernel_handler: not from s-mode");
-    assert(intr_get() == 0, "trap_kernel_handler: interreput enabled"); 
+    assert(intr_get() == 0, "trap_kernel_handler: interreput enabled");
 
     // 中断异常处理核心逻辑
     if (scause & 0x8000000000000000ULL) {
@@ -152,5 +168,27 @@ void trap_kernel_handler()
 
         // 对于未处理的异常，可以选择panic
         assert(0, "Unhandled exception");
+    }
+
+    // 检查时间片是否用完，如果用完则进行调度（仅对时钟中断）
+    if (scause & 0x8000000000000000ULL) {
+        int interrupt_id = scause & 0xf;
+        if (interrupt_id == 1 || interrupt_id == 5) { // 时钟中断
+            proc_t* p = myproc();
+            if (p != NULL) {
+                spinlock_acquire(&p->lk);
+                if (p->time_slice == 0) {
+                    // 时间片用完，重置时间片并触发调度
+                    printf("[SCHED-K] Process %d time slice expired in kernel mode, switching...\n", p->pid);
+                    p->time_slice = TIME_SLICE;
+                    p->state = RUNNABLE;
+                    proc_sched();
+                    // proc_sched会释放锁并切换到调度器，不会返回到这里
+                    // 当进程再次被调度时会从这里继续执行
+                    printf("[SCHED-K] Process %d resumed after kernel scheduling\n", p->pid);
+                }
+                spinlock_release(&p->lk);
+            }
+        }
     }
 }

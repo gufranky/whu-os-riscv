@@ -5,6 +5,7 @@
 #include "proc/initcode.h"
 #include "memlayout.h"
 #include "proc/proc.h"
+#include "dev/timer.h"
 #include "riscv.h"
 #define VA_MAX (1ul << 38)   
 // 用户虚拟地址空间的布局常量
@@ -82,6 +83,10 @@ void proc_init()
         procs[i].heap_top = 0;
         procs[i].ustack_pages = 0;
         procs[i].mmap = NULL;
+
+        // 初始化时间片字段
+        procs[i].time_slice = TIME_SLICE;
+        procs[i].total_time = 0;
     }
 }
 
@@ -103,6 +108,10 @@ proc_t* proc_alloc()
 found:
     p->pid = alloc_pid();
     p->state = RUNNABLE;
+
+    // 初始化时间片
+    p->time_slice = TIME_SLICE;
+    p->total_time = 0;
 
     // 分配 trapframe 页面
     if ((p->tf = (trapframe_t*)pmem_alloc(true)) == NULL) {
@@ -149,6 +158,10 @@ void proc_free(proc_t* p)
     // p->killed = 0;
     p->exit_state = 0;
     p->state = UNUSED;
+
+    // 重置时间片字段
+    p->time_slice = TIME_SLICE;
+    p->total_time = 0;
 }
 
 
@@ -201,6 +214,10 @@ void proc_make_first()
 
     // pid 设置
     p->pid = alloc_pid();
+
+    // 初始化时间片
+    p->time_slice = TIME_SLICE;
+    p->total_time = 0;
 
     // 分配 trapframe 页面
     uint64 trapframe_pa = (uint64)pmem_alloc(true);
@@ -278,8 +295,6 @@ void proc_make_first()
     // 不要直接释放锁，让调度器来处理
     spinlock_release(&p->lk);
 
-    // 通过调度器启动第一个进程
-    proc_scheduler();
 }
 
 // 进程复制 - 基于xv6实现
@@ -349,8 +364,7 @@ int proc_wait(uint64 addr)
     int havekids, pid;
     proc_t* curr = myproc();
 
-    // TODO: 实现wait_lock机制
-    // spinlock_acquire(&wait_lock);
+
     for (;;) {
         // 扫描进程表查找已退出的子进程
         havekids = 0;
@@ -376,23 +390,17 @@ int proc_wait(uint64 addr)
             }
         }
 
-        // 如果没有子进程或者当前进程被杀死，就不用等待了
-        // TODO: 实现killed函数
-        // if (!havekids || killed(curr)) {
+
         if (!havekids) {
-            // TODO: release(&wait_lock);
             return -1;
         }
 
-        // 等待子进程退出
-        // TODO: 实现wait_lock机制
-        // proc_sleep(curr, &wait_lock);
+
         proc_sleep(curr);
     }
 }
 
-// 将父进程的所有子进程转交给init进程 - 基于xv6的reparent实现
-// 调用者必须持有wait_lock
+
 static void proc_reparent(proc_t* parent)
 {
     proc_t* pp;
@@ -414,7 +422,7 @@ static void __attribute__((unused)) proc_wakeup_one(proc_t* p)
     }
 }
 
-// 进程退出 - 基于xv6的kexit实现
+
 void proc_exit(int exit_state)
 {
     proc_t* curr = myproc();
@@ -422,23 +430,7 @@ void proc_exit(int exit_state)
     if (curr == proczero)
         panic("init exiting");
 
-    // TODO: 关闭所有打开的文件
-    // for (int fd = 0; fd < NOFILE; fd++) {
-    //     if (curr->ofile[fd]) {
-    //         struct file *f = curr->ofile[fd];
-    //         fileclose(f);
-    //         curr->ofile[fd] = 0;
-    //     }
-    // }
 
-    // TODO: 文件系统相关清理
-    // begin_op();
-    // iput(curr->cwd);
-    // end_op();
-    // curr->cwd = 0;
-
-    // TODO: 实现wait_lock机制
-    // spinlock_acquire(&wait_lock);
 
     // 将所有子进程转交给init进程
     proc_reparent(curr);
@@ -458,10 +450,7 @@ void proc_exit(int exit_state)
     panic("zombie exit");
 }
 
-// 进程切换到调度器 - 基于xv6的sched实现
-// 调用者必须持有当前进程的锁并已经改变proc->state
-// 保存并恢复intena因为intena是这个内核线程的属性，
-// 而不是这个CPU的属性
+
 void proc_sched()
 {
     int intena;
@@ -481,11 +470,12 @@ void proc_sched()
     mycpu()->intena = intena;
 }
 
-// 调度器 - 基于xv6的scheduler实现
+// 调度器 - 基于xv6的scheduler实现 + 时间片轮转
 void proc_scheduler()
 {
     proc_t* p;
     cpu_t* c = mycpu();
+    static int last_scheduled = -1;  // 记录上次调度的进程索引，用于轮转
 
     c->proc = NULL;
     for (;;) {
@@ -496,23 +486,41 @@ void proc_scheduler()
         intr_off();
 
         int found = 0;
-        for (p = procs; p < &procs[NPROC]; p++) {
+
+        // 轮转调度：从上次调度的下一个进程开始寻找
+        int start_idx = (last_scheduled + 1) % NPROC;
+
+        for (int i = 0; i < NPROC; i++) {
+            int idx = (start_idx + i) % NPROC;
+            p = &procs[idx];
+
             spinlock_acquire(&p->lk);
             if (p->state == RUNNABLE) {
                 // 切换到选中的进程。进程的工作是
                 // 释放其锁然后重新获取它
                 // 在跳回到我们之前。
+                printf("[SCHED] Switching to process %d (time_slice=%d, total_time=%d)\n",
+                       p->pid, p->time_slice, p->total_time);
                 p->state = RUNNING;
                 c->proc = p;
+                last_scheduled = idx;  // 更新上次调度的进程索引
+
+                // 重置进程的时间片
+                proc_reset_time_slice(p);
+
                 swtch(&c->ctx, &p->ctx);
 
                 // 进程现在运行完毕。
                 // 它应该在回来之前改变其p->state。
+                printf("[SCHED] Process %d finished running (state=%d)\n", p->pid, p->state);
                 c->proc = NULL;
                 found = 1;
+                spinlock_release(&p->lk);
+                break;  // 找到一个进程后立即退出循环
             }
             spinlock_release(&p->lk);
         }
+
         if (found == 0) {
             // 没有任何可运行的进程；停止在这个核心上运行直到中断。
             asm volatile("wfi");
@@ -520,19 +528,11 @@ void proc_scheduler()
     }
 }
 
-// 进程睡眠在channel上 - 基于xv6的sleep实现
-// 释放条件锁lk，在chan上睡眠
-// 被唤醒时重新获取lk
+
 void proc_sleep(void* chan)
 {
     proc_t* p = myproc();
 
-    // 必须获取p->lk以便
-    // 改变p->state然后调用sched。
-    // 一旦我们持有p->lk，我们可以
-    // 保证不会错过任何唤醒
-    // （wakeup会锁定p->lk），
-    // 所以可以安全地释放lk。
 
     spinlock_acquire(&p->lk);
 
@@ -562,5 +562,15 @@ void proc_wakeup(void* chan)
             }
             spinlock_release(&p->lk);
         }
+    }
+}
+
+// 时间片相关函数
+
+// 重置进程的时间片（用于新调度的进程）
+void proc_reset_time_slice(proc_t* p)
+{
+    if (p) {
+        p->time_slice = TIME_SLICE;
     }
 }

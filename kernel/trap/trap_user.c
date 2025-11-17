@@ -1,6 +1,8 @@
 #include "lib/print.h"
 #include "trap/trap.h"
 #include "proc/cpu.h"
+#include "proc/proc.h"
+#include "dev/timer.h"
 #include "mem/vmem.h"
 #include "memlayout.h"
 #include "riscv.h"
@@ -122,6 +124,20 @@ void trap_user_handler()
         }
     }
 
+    // 检查时间片是否用完，如果用完则进行调度
+    spinlock_acquire(&p->lk);
+    if (p->time_slice == 0) {
+        // 时间片用完，重置时间片并触发调度
+        printf("[SCHED] Process %d time slice expired, switching...\n", p->pid);
+        p->time_slice = TIME_SLICE;
+        p->state = RUNNABLE;
+        proc_sched();
+        // proc_sched会释放锁并切换到调度器，不会返回到这里
+        // 当进程再次被调度时会从这里继续执行
+        printf("[SCHED] Process %d resumed after scheduling\n", p->pid);
+    }
+    spinlock_release(&p->lk);
+
     // 返回用户态
     trap_user_return();
 }
@@ -131,7 +147,6 @@ void trap_user_handler()
 void trap_user_return()
 {
     proc_t* p = myproc();
-
 
     intr_off();
 
