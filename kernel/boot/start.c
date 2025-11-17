@@ -11,19 +11,19 @@ extern char ebss[];
 void start()
 {
   // 只有CPU 0负责初始化BSS段
-  if (r_mhartid() == 0) {
+  /*if (r_mhartid() == 0) {
     // 将BSS段清零
     char* p;
     for (p = sbss; p < ebss; p++) {
       *p = 0;
     }
-  }
+  }*/
 
   // 设置每个核心的 tp 寄存器为其 hartid
   w_tp(r_mhartid());
 
   // 在M-mode下初始化时钟中断
-  timer_init();
+  
 
   unsigned long x = r_mstatus();
   x &= ~MSTATUS_MPP_MASK;
@@ -37,5 +37,6 @@ void start()
   w_mepc((uint64)main);//设置mret的返回位置
   w_pmpaddr0(0x3fffffffffffffull);
   w_pmpcfg0(0xf);//将所有内存设置为可读可写可执行
+  timer_init();
   asm volatile("mret");
 }

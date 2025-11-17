@@ -7,6 +7,7 @@
 typedef struct cpu {
     int noff;       // 关中断的深度
     int origin;     // 第一次关中断前的状态
+    int intena;     // 中断是否启用 - 兼容xv6
     proc_t* proc;   // cpu上运行的进程
     context_t ctx;  // 内核上下文暂存
 } cpu_t;

@@ -32,6 +32,9 @@ int main()
         trap_kernel_init();
         trap_kernel_inithart();
 
+        // 初始化进程管理
+        proc_init();
+
         printf("cpu %d is booting! Kernel initialized.\n", cpuid);
         __sync_synchronize();
         started = 1;
@@ -58,7 +61,7 @@ int main()
         printf("CPU %d: Creating first user process...\n", cpuid);
         proc_make_first();
         // proc_make_first() 不会返回，直接切换到用户进程
-        panic("proc_make_first returned");
+        //panic("proc_make_first returned");
     } else {
         // CPU 1 进入空闲循环等待时钟中断
         printf("CPU %d: Entering idle loop, waiting for interrupts...\n", cpuid);
@@ -66,7 +69,7 @@ int main()
             // CPU 1 空闲等待
         }
     }
-
+    proc_scheduler();
     // 这里永远不应该到达
     return 0;
 }

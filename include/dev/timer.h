@@ -10,7 +10,7 @@ typedef struct timer {
 } timer_t;
 
 // 每隔INTERVAL个单位时间发生一次时钟中断(1e6大约为0.1s)
-#define INTERVAL 10000000
+#define INTERVAL 1000000
 
 void   timer_init();       // 时钟初始化(in M-mode)
 

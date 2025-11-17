@@ -21,4 +21,6 @@ typedef enum {false = 0, true = 1} bool;
 
 #define NCPU 2
 #define PGSIZE 4096
+
+#define NPROC 64
 #endif

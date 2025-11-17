@@ -4,6 +4,7 @@
 #include "mem/vmem.h"
 #include "memlayout.h"
 #include "riscv.h"
+#include "syscall/syscall.h"
 
 // 用户虚拟地址空间的布局常量
 #define VA_MAX (1ul << 38)               // 最大虚拟地址
@@ -93,24 +94,8 @@ void trap_user_handler()
                 // 系统调用处理
                 p->tf->epc += 4;          // 系统调用成功后跳过ecall指令（4字节）
 
-                // 系统调用号在a7寄存器中，参数在a0-a5寄存器中
-                uint64 syscall_num = p->tf->a7;
-                uint64 ret_val = 0;      // 系统调用返回值
-
-                switch (syscall_num) {
-                    case 0: // SYS_print - 0号系统调用：输出调用进程的pid
-                        printf("get a syscall from proc %d\n", p->pid);
-                        ret_val = 0; // 成功返回0
-                        break;
-
-                    default:
-                        printf("Unknown system call: %d from process %d\n", syscall_num, p->pid);
-                        ret_val = -1; // 错误返回-1
-                        break;
-                }
-
-                // 设置系统调用返回值到a0寄存器
-                p->tf->a0 = ret_val;
+                // 调用统一的系统调用处理函数
+                syscall();
                 break;
 
             case 12: // Instruction page fault
@@ -147,6 +132,7 @@ void trap_user_return()
 {
     proc_t* p = myproc();
 
+
     intr_off();
 
     // 设置用户trap向量
@@ -166,6 +152,9 @@ void trap_user_return()
     w_sstatus(x);
 
     // 设置S-mode异常程序计数器为保存的用户pc
+    // 检查 epc 值是否合理
+    if (p->tf->epc >= 0x80000000ULL) {
+    }
     w_sepc(p->tf->epc);
 
     // 告诉trampoline.S用户页表切换到哪里

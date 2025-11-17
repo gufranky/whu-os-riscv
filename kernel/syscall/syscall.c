@@ -19,7 +19,43 @@
 // 系统调用
 void syscall()
 {
+    proc_t* p = myproc();
+    uint64 num = p->tf->a7; // 系统调用号存储在a7寄存器中
+    uint64 ret = 0;
 
+    switch(num) {
+        case SYS_print: // 0号系统调用：输出调用进程的pid
+            ret = sys_print();
+            break;
+        case SYS_brk: // 1号系统调用：内存分配
+            ret = sys_brk();
+            break;
+        case SYS_mmap: // 2号系统调用：内存映射
+            ret = sys_mmap();
+            break;
+        case SYS_munmap: // 3号系统调用：取消内存映射
+            ret = sys_munmap();
+            break;
+        case SYS_fork: // 4号系统调用：创建进程
+            ret = sys_fork();
+            break;
+        case SYS_wait: // 5号系统调用：等待子进程
+            ret = sys_wait();
+            break;
+        case SYS_exit: // 6号系统调用：进程退出
+            ret = sys_exit();
+            break;
+        case SYS_sleep: // 7号系统调用：进程睡眠
+            ret = sys_sleep();
+            break;
+        default:
+            printf("unknown sys call %d\n", num);
+            ret = -1;
+            break;
+    }
+
+    // 将返回值写入a0寄存器
+    p->tf->a0 = ret;
 }
 
 /*
