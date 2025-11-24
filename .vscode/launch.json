@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/myrt1e/whu-os/kernel/boot",
-      "program": "/home/myrt1e/whu-os/kernel/boot/build/Debug/outDebug",
+      "cwd": "/home/myrt1e/whu-os/kernel/trap",
+      "program": "/home/myrt1e/whu-os/kernel/trap/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

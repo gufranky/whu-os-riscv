@@ -23,4 +23,5 @@ typedef enum {false = 0, true = 1} bool;
 #define PGSIZE 4096
 
 #define NPROC 64
+#define BLOCK_SIZE 1024
 #endif

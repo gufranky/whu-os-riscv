@@ -58,6 +58,29 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "syscall.h": "c",
-    "common.h": "c"
+    "common.h": "c",
+    "cpu.h": "c",
+    "proc.h": "c",
+    "vmem.h": "c",
+    "types.h": "c",
+    "bit": "c",
+    "cstdlib": "c",
+    "string": "c",
+    "exception": "c",
+    "memory_resource": "c",
+    "cmath": "c",
+    "functional": "c",
+    "new": "c",
+    "numeric": "c",
+    "ostream": "c",
+    "string_view": "c",
+    "tuple": "c",
+    "type_traits": "c",
+    "typeinfo": "c",
+    "utility": "c",
+    "string.h": "c",
+    "fs.h": "c",
+    "str.h": "c",
+    "memlayout.h": "c"
   }
 }

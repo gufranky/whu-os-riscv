@@ -7,6 +7,7 @@
 #include "proc/proc.h"
 #include "dev/timer.h"
 #include "riscv.h"
+#include "lib/str.h"
 #define VA_MAX (1ul << 38)   
 // 用户虚拟地址空间的布局常量
 #define TRAMPOLINE (VA_MAX - PGSIZE)     // trampoline页的虚拟地址
@@ -396,7 +397,7 @@ int proc_wait(uint64 addr)
         }
 
 
-        proc_sleep(curr);
+        proc_sleep(curr,NULL);
     }
 }
 
@@ -529,13 +530,14 @@ void proc_scheduler()
 }
 
 
-void proc_sleep(void* chan)
+void proc_sleep(void* chan,spinlock_t* x)
 {
     proc_t* p = myproc();
 
 
     spinlock_acquire(&p->lk);
-
+    if(x!=NULL)
+    spinlock_release(x);
     // 进入睡眠
     p->sleep_space = chan;
     p->state = SLEEPING;
@@ -546,6 +548,8 @@ void proc_sleep(void* chan)
 
     // 重新获取原始锁
     spinlock_release(&p->lk);
+    if(x!=NULL)
+    spinlock_acquire(x);
 }
 
 // 唤醒所有在channel上睡眠的进程 - 基于xv6的wakeup实现

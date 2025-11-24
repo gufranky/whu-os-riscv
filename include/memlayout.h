@@ -29,5 +29,6 @@
 
 // 内核栈相关 - 为每个CPU分配内核栈空间
 #define KSTACK(hartid) (0x3f80000000L + ((hartid) + 1) * 2 * PGSIZE)
-
+#define VIRTIO_BASE 0x10001000ul
+#define VIRTIO_IRQ 1
 #endif

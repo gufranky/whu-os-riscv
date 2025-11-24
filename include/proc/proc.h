@@ -126,7 +126,7 @@ int      proc_fork();                                  // 复制子进程
 int      proc_wait(uint64 addr);                       // 等待子进程退出
 void     proc_exit(int exit_state);                    // 进程退出
 void     proc_yield();                                 // 进程放弃CPU
-void     proc_sleep(void* sleep_space);// 进程睡眠
+void     proc_sleep(void* sleep_space,spinlock_t* x);// 进程睡眠
 void     proc_wakeup(void* sleep_space);               // 进程唤醒
 void     proc_sched();                                 // 进程切换到调度器
 void     proc_scheduler();                             // 调度器
