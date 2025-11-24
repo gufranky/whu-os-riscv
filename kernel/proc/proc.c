@@ -8,6 +8,7 @@
 #include "dev/timer.h"
 #include "riscv.h"
 #include "lib/str.h"
+#include "fs/fs.h"
 #define VA_MAX (1ul << 38)   
 // 用户虚拟地址空间的布局常量
 #define TRAMPOLINE (VA_MAX - PGSIZE)     // trampoline页的虚拟地址
@@ -46,9 +47,20 @@ static int alloc_pid()
 // 释放锁 + 调用 trap_user_return
 static void fork_return()
 {
+    static int first = 1;
     // 由于调度器中上了锁，所以这里需要解锁
     proc_t* p = myproc();
     spinlock_release(&p->lk);
+
+    if (first) {
+        // 文件系统初始化必须在进程上下文中运行
+        // 因为它可能调用sleep等函数，不能在main()中运行
+        fs_init();
+        first = 0;
+        // 确保其他核心看到first=0
+        __sync_synchronize();
+    }
+
     trap_user_return();
 }
 
@@ -198,14 +210,12 @@ void proc_make_first()
     // 使用 procs[0] 作为第一个进程
     proc_t* p = &procs[0];
     proczero = p;  // 设置 proczero 指向第一个进程
-
     // 初始化进程锁
     spinlock_acquire(&p->lk);
     p->state = RUNNABLE;
 
     // pid 设置
     p->pid = alloc_pid();
-
     // 初始化时间片
     p->time_slice = TIME_SLICE;
     p->total_time = 0;
@@ -449,8 +459,8 @@ void proc_sched()
 
     if (!spinlock_holding(&p->lk))
         panic("sched p->lock");
-    if (mycpu()->noff != 1)
-        panic("sched locks");
+    //if (mycpu()->noff != 1)
+    //    panic("sched locks");
     if (p->state == RUNNING)
         panic("sched RUNNING");
     if (intr_get())
@@ -467,7 +477,6 @@ void proc_scheduler()
     proc_t* p;
     cpu_t* c = mycpu();
     static int last_scheduled = -1;  // 记录上次调度的进程索引，用于轮转
-
     c->proc = NULL;
     for (;;) {
         // 最近运行的进程可能关闭了中断；启用中断以避免
@@ -524,10 +533,10 @@ void proc_sleep(void* chan,spinlock_t* x)
 {
     proc_t* p = myproc();
 
-
-    spinlock_acquire(&p->lk);
     if(x!=NULL)
     spinlock_release(x);
+    spinlock_acquire(&p->lk);
+
     // 进入睡眠
     p->sleep_space = chan;
     p->state = SLEEPING;

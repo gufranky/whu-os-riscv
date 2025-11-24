@@ -5,6 +5,12 @@
 #define VA_MAX (1ul << 38)   
 pte_t* vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc)
 {
+    // 如果pgtbl为NULL，使用内核页表
+    if (pgtbl == NULL) {
+        extern pgtbl_t kernel_pgtbl;
+        pgtbl = kernel_pgtbl;
+    }
+
     // 检查虚拟地址是否合法
     if (va >= VA_MAX)
         panic("vm_getpte: va out of range");
@@ -75,6 +81,7 @@ void kvm_init() {
     vm_mappages(kernel_pgtbl, UART_BASE, UART_BASE, 1000, KERN_PERM);
     vm_mappages(kernel_pgtbl, PLIC_BASE, PLIC_BASE, 0x400000, KERN_PERM);
     vm_mappages(kernel_pgtbl, CLINT_BASE, CLINT_BASE, 0x10000, KERN_PERM);
+    vm_mappages(kernel_pgtbl, VIRTIO_BASE, VIRTIO_BASE, PGSIZE, KERN_PERM);
     // 2. 可用内存区 0x80000000~0x88000000 恒等映射
     vm_mappages(kernel_pgtbl, MEM_START, MEM_START, MEM_END - MEM_START, KERN_PERM);
 

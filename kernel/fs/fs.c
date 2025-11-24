@@ -32,7 +32,8 @@ void fs_init()
 {
     buf_init();
 
-    buf_t* buf; 
+    buf_t* buf;
+
     buf = buf_read(SB_BLOCK_NUM);
     memmove(&sb, buf->data, sizeof(sb));
     assert(sb.magic == FS_MAGIC, "fs_init: magic");

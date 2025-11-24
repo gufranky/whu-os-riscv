@@ -2,6 +2,7 @@
 #include "dev/timer.h"
 #include "dev/uart.h"
 #include "dev/plic.h"
+#include "dev/vio.h"
 #include "trap/trap.h"
 #include "proc/cpu.h"
 #include "proc/proc.h"
@@ -82,6 +83,10 @@ void external_interrupt_handler()
         case UART_IRQ:
             // 处理UART中断 - 键盘输入显示
             uart_intr();
+            break;
+        case VIRTIO_IRQ:
+            // 处理VirtIO磁盘中断
+            virtio_disk_intr();
             break;
         case 0:
             // 没有中断

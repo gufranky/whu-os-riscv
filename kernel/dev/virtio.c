@@ -217,13 +217,11 @@ void virtio_disk_rw(buf_t *b, bool write)
     // thus the call to kvmpa().
     uint64 addr = ALIGN_DOWN((uint64)&buf0, PGSIZE);
     uint64 off  = ((uint64)&buf0) % PGSIZE;
-
     pte_t* pte = vm_getpte(NULL, addr, false);
     disk.desc[idx[0]].addr = (uint64)PTE_TO_PA(*pte) + off;
     disk.desc[idx[0]].len = sizeof(buf0);
     disk.desc[idx[0]].flags = VRING_DESC_F_NEXT;
     disk.desc[idx[0]].next = idx[1];
-
     disk.desc[idx[1]].addr = (uint64)b->data;
     disk.desc[idx[1]].len = BLOCK_SIZE;
     if (write)
@@ -238,7 +236,6 @@ void virtio_disk_rw(buf_t *b, bool write)
     disk.desc[idx[2]].len = 1;
     disk.desc[idx[2]].flags = VRING_DESC_F_WRITE; // device writes the status
     disk.desc[idx[2]].next = 0;
-
     // record   for virtio_disk_intr().
     b->disk = true;
     disk.info[idx[0]].b = b;
@@ -250,15 +247,12 @@ void virtio_disk_rw(buf_t *b, bool write)
     disk.avail[2 + (disk.avail[1] % NUM)] = idx[0];
     __sync_synchronize();
     disk.avail[1] = disk.avail[1] + 1;
-
     *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0; // value is queue number
-
     // Wait for virtio_disk_intr() to say request has finished.
     while (b->disk == true)
     {
         proc_sleep(b, &disk.vdisk_lock);
     }
-
     disk.info[idx[0]].b = 0;
     free_chain(idx[0]);
 

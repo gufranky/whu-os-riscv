@@ -2,10 +2,12 @@
 #include "lib/print.h"
 #include "dev/uart.h"
 #include "dev/timer.h"
+#include "dev/vio.h"
 #include "trap/trap.h"
 #include "mem/pmem.h"
 #include "mem/vmem.h"
 #include "proc/proc.h"
+#include "fs/fs.h"
 
 volatile static int started = 0;
 
@@ -34,6 +36,9 @@ int main()
 
         // 初始化进程管理
         proc_init();
+
+        // 初始化VirtIO磁盘驱动
+        virtio_disk_init();
 
         printf("cpu %d is booting! Kernel initialized.\n", cpuid);
         __sync_synchronize();
