@@ -1,6 +1,15 @@
 #include "types.h"
 #include "lib/str.h"
-
+void*
+memset(void *dst, int c, uint n)
+{
+  char *cdst = (char *) dst;
+  int i;
+  for(i = 0; i < n; i++){
+    cdst[i] = c;
+  }
+  return dst;
+}
 
 int
 memcmp(const void *v1, const void *v2, uint n)
@@ -41,6 +50,12 @@ memmove(void *dst, const void *src, uint n)
   return dst;
 }
 
+// memcpy exists to placate GCC.  Use memmove.
+void*
+memcpy(void *dst, const void *src, uint64 n)
+{
+  return memmove(dst, src, n);
+}
 
 int
 strncmp(const char *p, const char *q, uint n)

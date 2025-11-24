@@ -22,16 +22,6 @@ extern void swtch(context_t* old, context_t* new);
 // in trap_user.c
 extern void trap_user_return();
 
-// 内存操作函数
-void* memcpy(void* dst, const void* src, uint64 len)
-{
-    char* d = (char*)dst;
-    const char* s = (const char*)src;
-    for (uint64 i = 0; i < len; i++) {
-        d[i] = s[i];
-    }
-    return dst;
-}
 static proc_t procs[NPROC];
 
 // 第一个进程的指针

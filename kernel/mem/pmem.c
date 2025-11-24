@@ -63,10 +63,3 @@ void pmem_free(uint64 page, bool in_kernel)
     region->allocable++;
     spinlock_release(&region->lk);
 }
-void memset(void* dst, int val, uint64 len)
-{
-    uint8* p = (uint8*)dst;
-    for (uint64 i = 0; i < len; i++) {
-        p[i] = (uint8)val;
-    }
-}

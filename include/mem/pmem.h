@@ -4,6 +4,7 @@
 #include "common.h"
 #include "lib/lock.h"
 #include "lib/print.h"
+#include "lib/str.h"
 #define KERNEL_PAGES 2048
 // 来自kernel.ld
 extern char KERNEL_DATA[];
@@ -13,7 +14,6 @@ extern char ALLOC_END[];
 void  pmem_init(void);
 void* pmem_alloc(bool in_kernel);
 void  pmem_free(uint64 page, bool in_kernel);
-void  memset(void* dst, int val, uint64 len);
 typedef struct page_node { 
 struct page_node* next;
  } page_node_t;
