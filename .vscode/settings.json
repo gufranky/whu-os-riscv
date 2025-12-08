@@ -81,6 +81,9 @@
     "string.h": "c",
     "fs.h": "c",
     "str.h": "c",
-    "memlayout.h": "c"
+    "memlayout.h": "c",
+    "sys.h": "c",
+    "syscall_num.h": "c",
+    "syscall_arch.h": "c"
   }
 }

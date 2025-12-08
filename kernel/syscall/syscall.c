@@ -48,6 +48,60 @@ void syscall()
         case SYS_sleep: // 7号系统调用：进程睡眠
             ret = sys_sleep();
             break;
+        case SYS_open: // 8号系统调用：打开文件
+            ret = sys_open();
+            break;
+        case SYS_close: // 9号系统调用：关闭文件
+            ret = sys_close();
+            break;
+        case SYS_read: // 10号系统调用：读取文件
+            ret = sys_read();
+            break;
+        case SYS_write: // 11号系统调用：写入文件
+            ret = sys_write();
+            break;
+        case SYS_lseek: // 12号系统调用：移动文件指针
+            ret = sys_lseek();
+            break;
+        case SYS_dup: // 13号系统调用：复��文件描述符
+            ret = sys_dup();
+            break;
+        case SYS_fstat: // 14号系统调用：获取文件状态
+            ret = sys_fstat();
+            break;
+        case SYS_getdir: // 15号系统调用：获取目录项
+            ret = sys_getdir();
+            break;
+        case SYS_mkdir: // 16号系统调用：创建目录
+            ret = sys_mkdir();
+            break;
+        case SYS_chdir: // 17号系统调用：改变当前目录
+            ret = sys_chdir();
+            break;
+        case SYS_link: // 18号系统调用：创建文件链接
+            ret = sys_link();
+            break;
+        case SYS_unlink: // 19号系统调用：删除文件链接
+            ret = sys_unlink();
+            break;
+        case SYS_alloc_block: // 20号系统调用：分配数据块
+            ret = sys_alloc_block();
+            break;
+        case SYS_free_block: // 21号系统调用：释放数据块
+            ret = sys_free_block();
+            break;
+        case SYS_show_buf: // 22号系统调用：显示buffer状态
+            ret = sys_show_buf();
+            break;
+        case SYS_read_block: // 23号系统调用：读取磁盘块
+            ret = sys_read_block();
+            break;
+        case SYS_write_block: // 24号系统调用：写入buffer
+            ret = sys_write_block();
+            break;
+        case SYS_release_block: // 25号系统调用：释放buffer
+            ret = sys_release_block();
+            break;
         default:
             printf("unknown sys call %d\n", num);
             ret = -1;

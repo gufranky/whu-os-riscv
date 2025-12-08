@@ -9,6 +9,9 @@ typedef uint64* pgtbl_t;
 // mmap_region定义
 typedef struct mmap_region mmap_region_t;
 
+// 前向声明
+typedef struct file file_t;
+
 // context 定义
 typedef struct context {
   uint64 ra; // 返回地址
@@ -102,6 +105,10 @@ typedef struct proc {
     struct proc* parent;     // 父进程
     int exit_state;          // 进程退出时的状态(父进程可能关心)
     void* sleep_space;       // 睡眠是为在等待什么
+
+    // 文件描述符表
+    #define FILE_PER_PROC 16
+    file_t* filelist[FILE_PER_PROC];       // 文件描述符表
 
     // 时间片轮转调度字段
     uint64 time_slice;       // 当前时间片剩余ticks

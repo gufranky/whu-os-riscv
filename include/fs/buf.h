@@ -23,5 +23,7 @@ buf_t* buf_read(uint32 block_num);
 void   buf_write(buf_t* buf);
 void   buf_release(buf_t* buf);
 void   buf_print();
+buf_t* index_to_buf(int index);
+int    buf_to_index(buf_t* buf);
 
 #endif

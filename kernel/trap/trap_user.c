@@ -167,9 +167,6 @@ void trap_user_return()
     w_sstatus(x);
 
     // 设置S-mode异常程序计数器为保存的用户pc
-    // 检查 epc 值是否合理
-    if (p->tf->epc >= 0x80000000ULL) {
-    }
     w_sepc(p->tf->epc);
 
     // 告诉trampoline.S用户页表切换到哪里

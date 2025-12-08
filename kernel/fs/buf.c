@@ -16,7 +16,7 @@ typedef struct buf_node {
 } buf_node_t;
 
 // buf cache
-static buf_node_t buf_cache[N_BLOCK_BUF];
+buf_node_t buf_cache[N_BLOCK_BUF];
 static buf_node_t head_buf; // ->next 已分配 ->prev 可分配
 static spinlock_t lk_buf_cache; // 这个锁负责保护 链式结构 + buf_ref + block_num
 
@@ -153,11 +153,35 @@ void buf_print()
     while(buf != &head_buf)
     {
         buf_t* b = &buf->buf;
-        printf("buf %d: ref = %d, block_num = %d\n", (int)(buf-buf_cache), b->buf_ref, b->block_num);
-        for(int i = 0; i < 8; i++)
-            printf("%d ",b->data[i]);
-        printf("\n");
+        // 只显示 block_num 不为 BLOCK_NUM_UNUSED (-1) 的缓冲区
+        if(b->block_num != BLOCK_NUM_UNUSED) {
+            printf("buf %d: ref = %d, block_num = %d\n", (int)(buf-buf_cache), b->buf_ref, b->block_num);
+            for(int i = 0; i < 8; i++)
+                printf("%d ",b->data[i]);
+            printf("\n");
+        }
         buf = buf->next;
     }
     spinlock_release(&lk_buf_cache);
+}
+
+// 根据索引获取buf指针
+buf_t* index_to_buf(int index)
+{
+    if(index < 0 || index >= N_BLOCK_BUF) {
+        return NULL;
+    }
+    return &buf_cache[index].buf;
+}
+
+// 根据buf指针获取索引
+int buf_to_index(buf_t* buf)
+{
+    buf_node_t* buf_node = (buf_node_t*)((char*)buf -
+        ((char*)&((buf_node_t*)0)->buf - (char*)0));
+    int index = buf_node - buf_cache;
+    if(index < 0 || index >= N_BLOCK_BUF) {
+        return -1;
+    }
+    return index;
 }

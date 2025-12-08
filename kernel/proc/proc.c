@@ -8,6 +8,7 @@
 #include "dev/timer.h"
 #include "riscv.h"
 #include "lib/str.h"
+#include "fs/file.h"
 #include "fs/fs.h"
 #define VA_MAX (1ul << 38)   
 // 用户虚拟地址空间的布局常量
@@ -112,6 +113,11 @@ found:
     p->pid = alloc_pid();
     p->state = RUNNABLE;
 
+    // 初始化文件描述符表
+    for (int i = 0; i < FILE_PER_PROC; i++) {
+        p->filelist[i] = NULL;
+    }
+
     // 初始化时间片
     p->time_slice = TIME_SLICE;
     p->total_time = 0;
@@ -154,6 +160,15 @@ void proc_free(proc_t* p)
     p->heap_top = 0;
     p->pid = 0;
     p->parent = NULL;
+
+    // 清理文件描述符表
+    for (int i = 0; i < FILE_PER_PROC; i++) {
+        if (p->filelist[i] != NULL) {
+            file_close(p->filelist[i]);
+            p->filelist[i] = NULL;
+        }
+    }
+
     // TODO: 实现进程名
     // p->name[0] = 0;
     p->sleep_space = NULL;
@@ -229,14 +244,16 @@ void proc_make_first()
     p->pgtbl = proc_pgtbl_init(trapframe_pa);
     if (!p->pgtbl) panic("proc_make_first: failed to initialize page table");
 
-    // ustack 映射 + 设置 ustack_pages
-    uint64 ustack_pa = (uint64)pmem_alloc(true);
-    if (!ustack_pa) panic("proc_make_first: failed to allocate user stack");
+    // ustack 映射 + 设置 ustack_pages (分配2页栈空间)
+    uint64 ustack_pa1 = (uint64)pmem_alloc(true);
+    uint64 ustack_pa2 = (uint64)pmem_alloc(true);
+    if (!ustack_pa1 || !ustack_pa2) panic("proc_make_first: failed to allocate user stack");
 
-    // 用户栈映射到 trapframe 下方一页
-    uint64 ustack_va = TRAPFRAME - PGSIZE;
-    vm_mappages(p->pgtbl, ustack_va, ustack_pa, PGSIZE, PTE_R | PTE_W | PTE_U);
-    p->ustack_pages = 1;
+    // 用户栈映射到 trapframe 下方两页
+    uint64 ustack_va = TRAPFRAME - 2 * PGSIZE;
+    vm_mappages(p->pgtbl, ustack_va, ustack_pa1, PGSIZE, PTE_R | PTE_W | PTE_U);
+    vm_mappages(p->pgtbl, ustack_va + PGSIZE, ustack_pa2, PGSIZE, PTE_R | PTE_W | PTE_U);
+    p->ustack_pages = 2;
 
     // data + code 映射
     assert(initcode_len <= PGSIZE, "proc_make_first: initcode too big\n");
@@ -251,7 +268,7 @@ void proc_make_first()
     memcpy((void*)code_pa, initcode, initcode_len);
 
     // 设置 heap_top - 代码页之后就是堆的起始位置
-    p->heap_top = code_va + PGSIZE;
+    p->heap_top = code_va + 2 * PGSIZE;
 
     // tf字段设置
     memset(p->tf, 0, sizeof(trapframe_t));
@@ -260,7 +277,7 @@ void proc_make_first()
     p->tf->epc = code_va;
 
     // 设置用户栈指针 - 栈从高地址往低地址增长，初始指向栈顶
-    p->tf->sp = ustack_va + PGSIZE;
+    p->tf->sp = ustack_va +  PGSIZE;
 
     // 设置内核相关字段，这些将在用户态陷入内核时使用
     p->tf->kernel_satp = r_satp();         // 当前内核页表
@@ -321,11 +338,12 @@ int proc_fork()
     // 子进程的返回值为 0
     child->tf->a0 = 0;
 
-    // TODO: 复制打开的文件描述符
-    // for (i = 0; i < NOFILE; i++)
-    //     if (curr->ofile[i])
-    //         child->ofile[i] = filedup(curr->ofile[i]);
-    // child->cwd = idup(curr->cwd);
+    // 复制打开的文件描述符
+    for (int i = 0; i < FILE_PER_PROC; i++) {
+        if (curr->filelist[i] != NULL) {
+            child->filelist[i] = file_dup(curr->filelist[i]);
+        }
+    }
 
     // TODO: 复制进程名
     // safestrcpy(child->name, curr->name, sizeof(curr->name));
@@ -499,8 +517,6 @@ void proc_scheduler()
                 // 切换到选中的进程。进程的工作是
                 // 释放其锁然后重新获取它
                 // 在跳回到我们之前。
-                printf("[SCHED] Switching to process %d (time_slice=%d, total_time=%d)\n",
-                       p->pid, p->time_slice, p->total_time);
                 p->state = RUNNING;
                 c->proc = p;
                 last_scheduled = idx;  // 更新上次调度的进程索引
@@ -512,7 +528,6 @@ void proc_scheduler()
 
                 // 进程现在运行完毕。
                 // 它应该在回来之前改变其p->state。
-                printf("[SCHED] Process %d finished running (state=%d)\n", p->pid, p->state);
                 c->proc = NULL;
                 found = 1;
                 spinlock_release(&p->lk);
